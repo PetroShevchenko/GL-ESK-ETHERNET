@@ -166,7 +166,7 @@ Middlewares/Third_Party/LwIP/src/apps/mqtt/mqtt.c
 
 # ASM sources
 ASM_SOURCES =  \
-startup_stm32f407vgtx.s
+Core/Startup/startup_stm32f407vgtx.s
 
 
 #######################################
@@ -269,7 +269,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # LDFLAGS
 #######################################
 # link script
-LDSCRIPT = STM32F407VGTx_FLASH.ld
+LDSCRIPT = STM32F407VGTX_FLASH.ld
 
 # libraries
 LIBS = -lc -lm -lnosys
