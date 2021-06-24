@@ -15,19 +15,29 @@ All third-party libraries are distributed under their own licenses.
 
 ## Build
 ### 1.1.Build using STM32CubeIDE
-Launch STM32CubeIDE and select menu item 'Project->Build All'
+Launch STM32CubeIDE then select the tcp_socket_client project and click the menu item 'Project->Build All'
 
 ### 1.2.Build using Makefile
 Launch system terminal by pressing 'Ctrl+T' and 
-change the current directory to ~/GL-ESK-ETHERNET/tcp_socket_client
+change the current directory to ~/GL-ESK-ETHERNET/tcp_socket_client.
 Run the command:
-$ make
+**$ make**
+
 Make sure you have installed all required utilies such as:
--GNU Make
--arm-none-eabi-gcc
--binutils
--openocd
--gdb-multiarch
-If not type the following commands:
-$ sudo apt update
-$ sudo apt install make gcc-arm-none-eabi openocd gdb-multiarch -y
+* GNU Make
+* arm-none-eabi-gcc
+* binutils
+* openocd
+* gdb-multiarch
+
+If not than type the following commands:
+**$ sudo apt update**
+
+**$ sudo apt install make gcc-arm-none-eabi openocd gdb-multiarch -y**
+
+## Flash \& Debug
+### 2.1 Flash \& Debug in STM32CubeIDE
+Launch STM32CubeIDE then select the tcp_socket_client project and click the picture with a bug(Debug tcp_socket_client)
+
+### 2.2. Flash \& Debug using Linux terminal
+

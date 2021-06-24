@@ -166,7 +166,7 @@ Middlewares/Third_Party/LwIP/src/apps/mqtt/mqtt.c
 
 # ASM sources
 ASM_SOURCES =  \
-startup_stm32f407xx.s
+startup_stm32f407vgtx.s
 
 
 #######################################
