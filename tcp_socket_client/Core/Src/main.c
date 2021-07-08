@@ -39,6 +39,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#ifndef DHCP_STATE_BOUND
+#define DHCP_STATE_BOUND 10
+#endif
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -611,9 +614,27 @@ void StartDefaultTask(void const * argument)
   /* init code for LWIP */
   MX_LWIP_Init();
   /* USER CODE BEGIN 5 */
+  struct dhcp *dhcp;
+  char msg[16];
+  bool dhcp_bound_flag = false;
+  uint32_t offered_ip = 0;
   /* Infinite loop */
   for(;;)
   {
+	  dhcp = netif_dhcp_data(lwip_get_netif());
+
+	  if (dhcp->state == DHCP_STATE_BOUND && !dhcp_bound_flag)
+	  {
+		  dhcp_bound_flag = true;
+		  lcd_command_set(LCD_CLR_SCR_CMD);
+		  lcd_puts("DHCP IP address:");
+		  lcd_command_set(LCD_LFCR_CMD);
+		  offered_ip = ip4_addr_get_u32(&dhcp->offered_ip_addr);
+		  snprintf(msg, sizeof(msg), "%03lu.%03lu.%03lu.%03lu",
+				  (offered_ip)&0xFF,  (offered_ip >> 8)&0xFF, (offered_ip >> 16)&0xFF, (offered_ip >> 24)&0xFF);
+		  lcd_puts(msg);
+	  }
+
 	  BSP_LED_Toggle(BLUE);
 	  osDelay(1000);
   }

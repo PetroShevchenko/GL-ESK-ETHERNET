@@ -40,7 +40,7 @@
 #endif /* WITH_RTOS */
 
 /* USER CODE BEGIN 0 */
-
+const struct netif * const lwip_get_netif(void);
 /* USER CODE END 0 */
 
 /* Global Variables ----------------------------------------------------------*/

@@ -42,10 +42,12 @@ Core/Src/tcp_client.c \
 Core/Src/tcp_server.c \
 Core/Src/simple_http_server.c \
 Drivers/BSP/Src/stm32f4_discovery.c \
-Drivers/DHT/Src/dht11.c \
-Drivers/DHT/Src/dht11_stm32.c \
-Drivers/KSZ8021RNL/Src/ksz8021rnl.c \
-Drivers/KSZ8021RNL/Src/stm32f4xx_hal_eth.c \
+Drivers/BSP/Src/delay.c \
+Drivers/DHT11/Src/dht11.c \
+Drivers/DHT11/Src/dht11_stm32.c \
+Drivers/KSZ8081RNB/Src/ksz8081rnb.c \
+Drivers/KSZ8081RNB/Src/stm32f4xx_hal_eth.c \
+Drivers/WH1602B/Src/lcd.c
 
 C_SOURCES +=  $(C_USER_SOURCES) \
 Core/Src/main.c \
@@ -221,8 +223,9 @@ AS_INCLUDES =  \
 # C includes
 C_USER_INCLUDES = \
 -IDrivers/BSP/Inc \
--IDrivers/DHT/Inc \
--IDrivers/KSZ8021RNL/Inc \
+-IDrivers/DHT11/Inc \
+-IDrivers/KSZ8081RNB/Inc \
+-IDrivers/WH1602B/Inc
 
 C_INCLUDES += $(C_USER_INCLUDES) \
 -ICore/Inc \

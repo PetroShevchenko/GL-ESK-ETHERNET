@@ -48,7 +48,10 @@ ip4_addr_t netmask;
 ip4_addr_t gw;
 
 /* USER CODE BEGIN 2 */
-
+const struct netif * const lwip_get_netif()
+{
+	return &gnetif;
+}
 /* USER CODE END 2 */
 
 /**
