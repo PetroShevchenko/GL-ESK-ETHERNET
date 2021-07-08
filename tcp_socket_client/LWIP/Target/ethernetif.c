@@ -31,7 +31,9 @@
 #include "lwip/tcpip.h"
 /* Within 'USER CODE' section, code will be kept by default at each generation */
 /* USER CODE BEGIN 0 */
-#include "ksz8021rnl.h"
+
+
+#include "ksz8081rnb.h"
 /* USER CODE END 0 */
 
 /* Private define ------------------------------------------------------------*/
@@ -260,7 +262,7 @@ static void low_level_init(struct netif *netif)
   heth.Init.MediaInterface = ETH_MEDIA_INTERFACE_RMII;
 
   /* USER CODE BEGIN MACADDRESS */
-  ksz8021rnl_set_physical_address();
+  phy_bootstrap();
   /* USER CODE END MACADDRESS */
 
   hal_eth_init_status = HAL_ETH_Init(&heth);
@@ -313,7 +315,7 @@ static void low_level_init(struct netif *netif)
   HAL_ETH_Start(&heth);
 
 /* USER CODE BEGIN PHY_PRE_CONFIG */
-    ksz8021rnl_init(&heth);
+    phy_init(&heth);
 /* USER CODE END PHY_PRE_CONFIG */
 
 /* USER CODE BEGIN PHY_POST_CONFIG */

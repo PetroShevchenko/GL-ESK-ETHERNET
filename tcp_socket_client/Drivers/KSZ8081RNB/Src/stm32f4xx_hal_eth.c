@@ -130,7 +130,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
-#include "ksz8021rnl.h"
+
+#include "ksz8081rnb.h"
 /** @addtogroup STM32F4xx_HAL_Driver
   * @{
   */

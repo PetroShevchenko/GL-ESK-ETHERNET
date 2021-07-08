@@ -1,5 +1,5 @@
-#ifndef _KSZ8021RNL_H_
-#define _KSZ8021RNL_H_
+#ifndef _KSZ8081RNB_H_
+#define _KSZ8081RNB_H_
 #include "stm32f4xx_hal.h"
 #include <stdint.h>
 #define PHY_CONTROL2				((uint16_t)0x001F)
@@ -34,7 +34,7 @@
 #define PHY_DUPLEX_HALF             ((uint16_t)0x0000)
 #define PHY_DUPLEX_MASK             ((uint16_t)0x0100)
 
-void ksz8021rnl_set_physical_address();
-void ksz8021rnl_init(ETH_HandleTypeDef *heth);
+void phy_bootstrap();
+void phy_init(ETH_HandleTypeDef *heth);
 
-#endif /* _KSZ8021RNL_H_ */
+#endif /* _KSZ8081RNB_H_ */

@@ -1,7 +1,8 @@
-#include "dht11.h"
 #include "stm32f4xx_hal.h"
 #include <string.h>
-
+#include "delay.h"
+#include "dht11.h"
+#if 0
 static void DWT_Init(void)
 {
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
@@ -26,7 +27,7 @@ static inline uint8_t DWT_Cycles_to_us(uint32_t cycles)
 	uint32_t clock_in_MHz = (HAL_RCC_GetHCLKFreq() / 1000000);
 	return (uint8_t)(cycles / clock_in_MHz);
 }
-
+#endif
 static void HAL_init_read_pin(dht11_t *cb)
 {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};

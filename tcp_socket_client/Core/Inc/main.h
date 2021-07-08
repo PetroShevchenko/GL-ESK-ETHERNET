@@ -32,6 +32,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "delay.h"
 #include "stm32f4_discovery.h"
 #include "simple_http_server.h"
 /* USER CODE END Includes */
@@ -102,9 +103,23 @@ extern void initialise_monitor_handles();
 #define RMII_RXD1_GPIO_Port GPIOC
 #define BOOT1_Pin GPIO_PIN_2
 #define BOOT1_GPIO_Port GPIOB
+#define DISP_RS_Pin GPIO_PIN_7
+#define DISP_RS_GPIO_Port GPIOE
 #define RMII_PHY_INT_Pin GPIO_PIN_8
 #define RMII_PHY_INT_GPIO_Port GPIOE
 #define RMII_PHY_INT_EXTI_IRQn EXTI9_5_IRQn
+#define DISP_RW_Pin GPIO_PIN_10
+#define DISP_RW_GPIO_Port GPIOE
+#define DISP_ENA_Pin GPIO_PIN_11
+#define DISP_ENA_GPIO_Port GPIOE
+#define DISP_DB4_Pin GPIO_PIN_12
+#define DISP_DB4_GPIO_Port GPIOE
+#define DISP_DB5_Pin GPIO_PIN_13
+#define DISP_DB5_GPIO_Port GPIOE
+#define DISP_DB6_Pin GPIO_PIN_14
+#define DISP_DB6_GPIO_Port GPIOE
+#define DISP_DB7_Pin GPIO_PIN_15
+#define DISP_DB7_GPIO_Port GPIOE
 #define CLK_IN_Pin GPIO_PIN_10
 #define CLK_IN_GPIO_Port GPIOB
 #define RMII_TXEN_Pin GPIO_PIN_11

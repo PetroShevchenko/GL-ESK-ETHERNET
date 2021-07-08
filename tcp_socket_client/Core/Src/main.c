@@ -27,7 +27,9 @@
 #include <stdio.h>
 #include <string.h>
 //#include <DHT.h>
-#include <dht11.h>
+
+#include "dht11.h"
+#include "lcd.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -251,6 +253,8 @@ int main(void)
   BSP_LED_Init(LED4);
   BSP_LED_Init(LED5);
   BSP_LED_Init(LED6);
+  /* Initialization of DWT module (cortex-m4)*/
+  DWT_Init();
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -284,6 +288,17 @@ int main(void)
    * */
   printf("USART3 initialized\n");
   NVIC_SetPriorityGrouping(0);
+
+  lcd_init();
+  /* Use the LCD_CLR_SCR_CMD command
+   * to clear the LCD screen */
+  lcd_command_set(LCD_CLR_SCR_CMD);
+  lcd_puts("GL Embedded");
+  /* Do not forget to set the LCD_LFCR_CMD
+   * command when printing more than 16
+   * characters because LCD 16x2 is used */
+  lcd_command_set(LCD_LFCR_CMD);
+  lcd_puts("Starter Kit");
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -428,7 +443,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, CS_I2C_SPI_Pin|DISP_RS_Pin|DISP_RW_Pin|DISP_ENA_Pin
+                          |DISP_DB4_Pin|DISP_DB5_Pin|DISP_DB6_Pin|DISP_DB7_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(OTG_FS_PowerSwitchOn_GPIO_Port, OTG_FS_PowerSwitchOn_Pin, GPIO_PIN_SET);
@@ -437,12 +453,14 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOD, RMII_PHY_RST_Pin|DHT11_IO_Pin|LD4_Pin|LD3_Pin
                           |LD5_Pin|LD6_Pin|Audio_RST_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : CS_I2C_SPI_Pin */
-  GPIO_InitStruct.Pin = CS_I2C_SPI_Pin;
+  /*Configure GPIO pins : CS_I2C_SPI_Pin DISP_RS_Pin DISP_RW_Pin DISP_ENA_Pin
+                           DISP_DB4_Pin DISP_DB5_Pin DISP_DB6_Pin DISP_DB7_Pin */
+  GPIO_InitStruct.Pin = CS_I2C_SPI_Pin|DISP_RS_Pin|DISP_RW_Pin|DISP_ENA_Pin
+                          |DISP_DB4_Pin|DISP_DB5_Pin|DISP_DB6_Pin|DISP_DB7_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(CS_I2C_SPI_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /*Configure GPIO pin : OTG_FS_PowerSwitchOn_Pin */
   GPIO_InitStruct.Pin = OTG_FS_PowerSwitchOn_Pin;
