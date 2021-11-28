@@ -134,7 +134,7 @@ static command_error_t gpio_command_handler(const uint8_t * buffer, size_t len, 
 	//char cmd[sizeof("toggle")];
 	//Led_TypeDef led[4] = {LED3, LED4, LED5, LED6};
 
-	if(buffer == NULL || len == 0 || len > CMD_BUFFER_MAX_LEN)
+	if(buffer == NULL || len == 0 || len > CMD_BUFFER_MAX_LEN || state == NULL || pin == NULL)
 	{
 		return COMMAND_ERR_ARGUMENT;
 	}
@@ -147,10 +147,8 @@ static command_error_t gpio_command_handler(const uint8_t * buffer, size_t len, 
 
 	if( *pin == 13 )
 	{
-		if( !HAL_GPIO_ReadPin(GPIOD, *pin) )
-		{
+		if( !HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_13) )
 			*state = true;
-		}
 		else
 			*state = false;
 
@@ -158,10 +156,8 @@ static command_error_t gpio_command_handler(const uint8_t * buffer, size_t len, 
 	}
 	else if( *pin == 12 )
 	{
-		if( !HAL_GPIO_ReadPin(GPIOD, *pin) )
-		{
+		if( !HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_12) )
 			*state = true;
-		}
 		else
 			*state = false;
 
@@ -169,10 +165,8 @@ static command_error_t gpio_command_handler(const uint8_t * buffer, size_t len, 
 	}
 	else if( *pin == 14 )
 	{
-		if( !HAL_GPIO_ReadPin(GPIOD, *pin) )
-		{
+		if( !HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_14) )
 			*state = true;
-		}
 		else
 			*state = false;
 
@@ -180,10 +174,8 @@ static command_error_t gpio_command_handler(const uint8_t * buffer, size_t len, 
 	}
 	else if( *pin == 15 )
 	{
-		if( !HAL_GPIO_ReadPin(GPIOD, *pin) )
-		{
+		if( !HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15) )
 			*state = true;
-		}
 		else
 			*state = false;
 
