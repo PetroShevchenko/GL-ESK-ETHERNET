@@ -147,7 +147,7 @@ static command_error_t gpio_command_handler(const uint8_t * buffer, size_t len, 
 
 	if( *pin == 13 )
 	{
-		if( !HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_13) )
+		if( HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_13) )
 			*state = true;
 		else
 			*state = false;
@@ -156,7 +156,7 @@ static command_error_t gpio_command_handler(const uint8_t * buffer, size_t len, 
 	}
 	else if( *pin == 12 )
 	{
-		if( !HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_12) )
+		if( HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_12) )
 			*state = true;
 		else
 			*state = false;
@@ -165,7 +165,7 @@ static command_error_t gpio_command_handler(const uint8_t * buffer, size_t len, 
 	}
 	else if( *pin == 14 )
 	{
-		if( !HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_14) )
+		if( HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_14) )
 			*state = true;
 		else
 			*state = false;
@@ -174,7 +174,7 @@ static command_error_t gpio_command_handler(const uint8_t * buffer, size_t len, 
 	}
 	else if( *pin == 15 )
 	{
-		if( !HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15) )
+		if( HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15) )
 			*state = true;
 		else
 			*state = false;
