@@ -364,7 +364,7 @@
 //#define MBEDTLS_XTEA_ALT
 
 /*
- * When replacing the elliptic curve module, please consider, that it is
+ * When replacing the elliptic curve module, pleace consider, that it is
  * implemented with two .c files:
  *      - ecp.c
  *      - ecp_curves.c
