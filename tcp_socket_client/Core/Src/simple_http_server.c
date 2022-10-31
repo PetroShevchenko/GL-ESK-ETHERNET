@@ -5,6 +5,7 @@
 #include "cmsis_os.h"
 #include <string.h>
 #include <stdbool.h>
+#include "mbedtls/platform.h"
 
 #if (USE_HTTP_DEBUG_PRINTF == 1)
 #include <stdio.h>
@@ -587,5 +588,134 @@ error_exit:
 	free(in.data);
 	free(out.data);
 
+	return status;
+}
+
+static int ssl_send_answer(mbedtls_ssl_context *ssl, http_buffer_t *out);
+
+http_status_t https_server_handler(mbedtls_net_context *ctx, mbedtls_ssl_context *ssl)
+{
+	int mbedtls_status;
+	http_status_t status = HTTP_ERR_RCV_TIMEOUT;
+	http_server_request_t request;
+	http_buffer_t in;
+	http_buffer_t out;
+
+	if (ctx == NULL || ssl == NULL) {
+		return HTTP_ERR_INVAL;
+	}
+
+	in.length = MAX_IN_PACKET_LENGTH;
+	in.data = malloc(in.length);
+	if (in.data == NULL)
+	{
+		return HTTP_ERR_FAULT;
+	}
+
+	out.length = MAX_OUT_PACKET_LENGTH;
+	out.data = malloc(out.length);
+	if (out.data == NULL)
+	{
+		free(in.data);
+		return HTTP_ERR_FAULT;
+	}
+	memset(in.data, 0, in.length);
+	memset(out.data, 0, out.length);
+
+	mbedtls_status = mbedtls_net_poll (ctx, MBEDTLS_NET_POLL_READ, 10 );
+
+	if ( mbedtls_status == 0)
+	{
+		mbedtls_status = mbedtls_ssl_read(ssl, in.data, in.length);
+		if (mbedtls_status <= 0)
+		{
+			status = HTTP_ERR_BAD_REQUEST;
+			goto error_exit;
+		}
+		status = parse_payload((const char *)in.data, &request);
+		if (status != HTTP_OK)
+		{
+			HTTP_DEBUG_PRINF("parse_payload() error: %d\n", status);
+			bad_request_handler(&out);
+			goto error_exit;
+		}
+		if (!is_command_implemented(request.command))
+		{
+			HTTP_DEBUG_PRINF("command not implemented\n");
+			not_implemented_handler(&out);
+			goto error_exit;
+		}
+		if (!is_path_correct((const char *)request.path))
+		{
+			HTTP_DEBUG_PRINF("requested path not found\n");
+			not_found_handler(&out);
+			goto error_exit;
+		}
+		if (!is_version_correct((const char *)request.version))
+		{
+			HTTP_DEBUG_PRINF("wrong protocol version: %s\n",request.version);
+			bad_request_handler(&out);
+			goto error_exit;
+		}
+		// if everything is OK
+		status = request_handler(&request, &out);
+		if (status != HTTP_OK)
+		{
+			error_handler(status, &out);
+		}
+	}
+	else
+	{
+		mbedtls_printf(" mbedtls_net_poll() error : %d\n", mbedtls_status);
+		status = HTTP_ERR_RCV_TIMEOUT;
+		goto error_exit;
+	}
+
+error_exit:
+	mbedtls_status = ssl_send_answer(ssl, &out);
+	if (mbedtls_status < 0)
+	{
+		mbedtls_printf(" ssl_send_answer error : %d\n", mbedtls_status);
+	}
+	free(in.data);
+	free(out.data);
+
+	return status;
+}
+
+static int ssl_send_answer(mbedtls_ssl_context *ssl, http_buffer_t *out)
+{
+	int status;
+	int len = strlen(out->data);
+	while( ( status = mbedtls_ssl_write(ssl, out->data, len ) ) <= 0 )
+	{
+	  if( status == MBEDTLS_ERR_NET_CONN_RESET )
+	  {
+		mbedtls_printf( " failed\n  ! peer closed the connection\n\n" );
+		return status;
+	  }
+
+	  if( status != MBEDTLS_ERR_SSL_WANT_READ && status != MBEDTLS_ERR_SSL_WANT_WRITE )
+	  {
+		mbedtls_printf( " failed\n  ! mbedtls_ssl_write returned %d\n\n", status );
+		return status;;
+	  }
+	}
+
+	len = status;
+	mbedtls_printf( " %d bytes written\n%s", len, (char *) out->data );
+
+	mbedtls_printf( "  . Closing the connection..." );
+
+	while( (status = mbedtls_ssl_close_notify(ssl) ) < 0 )
+	{
+	  if( status != MBEDTLS_ERR_SSL_WANT_READ && status != MBEDTLS_ERR_SSL_WANT_WRITE )
+	  {
+		mbedtls_printf( " failed\n  ! mbedtls_ssl_close_notify returned %d\n\n", status );
+		return status;;
+	  }
+	}
+
+	mbedtls_printf( " Ok\n" );
 	return status;
 }

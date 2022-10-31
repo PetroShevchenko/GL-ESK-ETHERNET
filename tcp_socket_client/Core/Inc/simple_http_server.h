@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include <mbedtls/net_sockets.h>
+
 typedef enum
 {
 	HTTP_OK,
@@ -36,6 +38,7 @@ typedef struct
 #define HTTP_OK_STR "OK"
 
 http_status_t http_server_handler(int sock);
+http_status_t https_server_handler(mbedtls_net_context *ctx, mbedtls_ssl_context *ssl);
 
 http_status_t http_temperature_path_handler(http_buffer_t *out) __attribute__((weak));
 http_status_t http_humidity_path_handler(http_buffer_t *out) __attribute__((weak));
