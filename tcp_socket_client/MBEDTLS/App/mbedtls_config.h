@@ -169,7 +169,7 @@
  *
  * Enable this layer to allow use of alternative memory allocators.
  */
-//#define MBEDTLS_PLATFORM_MEMORY
+#define MBEDTLS_PLATFORM_MEMORY
 
 /**
  * \def MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
@@ -3109,7 +3109,7 @@
  * Uncomment to set the maximum plaintext size of both
  * incoming and outgoing I/O buffers.
  */
-//#define MBEDTLS_SSL_MAX_CONTENT_LEN             16384
+#define MBEDTLS_SSL_MAX_CONTENT_LEN             2048
 
 /** \def MBEDTLS_SSL_IN_CONTENT_LEN
  *

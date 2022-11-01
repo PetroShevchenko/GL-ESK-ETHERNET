@@ -247,7 +247,7 @@ reset:
 	}
 
 exit:
-	mbedtls_printf(" Start_SSL_ServerTask unexpectedly finished its work\n");
+	mbedtls_printf("%s"," Start_SSL_ServerTask unexpectedly finished its work\n");
 	free_contexts();
 }
 

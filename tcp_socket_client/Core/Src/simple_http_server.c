@@ -8,8 +8,7 @@
 #include "mbedtls/platform.h"
 
 #if (USE_HTTP_DEBUG_PRINTF == 1)
-#include <stdio.h>
-#define HTTP_DEBUG_PRINF(...) do { printf("[simple_http_server.c: %s: %d]: ",__func__, __LINE__);printf(__VA_ARGS__); } while (0)
+#define HTTP_DEBUG_PRINF printf
 #else
 #define HTTP_DEBUG_PRINF(...)
 #endif

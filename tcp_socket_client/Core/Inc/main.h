@@ -35,11 +35,15 @@ extern "C" {
 #include "delay.h"
 #include "stm32f4_discovery.h"
 #include "simple_http_server.h"
+#include "cmsis_os.h"
+#include <stdio.h>
+#include <stdarg.h>
+#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+extern osMutexId printf_mutexHandle;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -56,6 +60,19 @@ extern "C" {
 #define GREEN 	LED4
 #define RED 	LED5
 #define BLUE 	LED6
+
+#if defined(NDEBUG) && defined(USE_SEMIHOST)
+#define printf(...)
+#else
+#define printf(...)\
+	do {\
+	osMutexWait (printf_mutexHandle, osWaitForever);\
+	printf("[%s:%d] ", __func__ , __LINE__);\
+	printf(__VA_ARGS__);\
+	printf("\r\n");\
+	osMutexRelease(printf_mutexHandle);\
+	} while(0)
+#endif
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/

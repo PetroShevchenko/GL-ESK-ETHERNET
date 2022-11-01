@@ -14,8 +14,7 @@
 #endif
 
 #if (USE_TCP_SERVER_PRINTF == 1)
-#include <stdio.h>
-#define TCP_SERVER_PRINTF(...) do { printf("[tcp_server.c: %s: %d]: ",__func__, __LINE__);printf(__VA_ARGS__); } while (0)
+#define TCP_SERVER_PRINTF printf
 #else
 #define TCP_SERVER_PRINTF(...)
 #endif
@@ -26,11 +25,11 @@ static uint16_t nport;
 
 void ServerThread(void const * argument);
 
-const osThreadDef_t os_thread_def_server1 = { "Server1", ServerThread, osPriorityNormal, 0, 1024 + 512};
-const osThreadDef_t os_thread_def_server2 = { "Server2", ServerThread, osPriorityNormal, 0, 1024 + 512};
-const osThreadDef_t os_thread_def_server3 = { "Server3", ServerThread, osPriorityNormal, 0, 1024 + 512};
-const osThreadDef_t os_thread_def_server4 = { "Server4", ServerThread, osPriorityNormal, 0, 1024 + 512};
-const osThreadDef_t os_thread_def_server5 = { "Server5", ServerThread, osPriorityNormal, 0, 1024 + 512};
+const osThreadDef_t os_thread_def_server1 = { "Server1", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 2};
+const osThreadDef_t os_thread_def_server2 = { "Server2", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 2};
+const osThreadDef_t os_thread_def_server3 = { "Server3", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 2};
+const osThreadDef_t os_thread_def_server4 = { "Server4", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 2};
+const osThreadDef_t os_thread_def_server5 = { "Server5", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 2};
 
 const osThreadDef_t * Servers[5] = {&os_thread_def_server1, &os_thread_def_server2, &os_thread_def_server3, &os_thread_def_server4, &os_thread_def_server5};
 osThreadId ThreadId[5] = {NULL, NULL, NULL, NULL, NULL};
@@ -38,13 +37,9 @@ osThreadId ThreadId[5] = {NULL, NULL, NULL, NULL, NULL};
 
 osMutexDef(thread_mutex);
 osMutexId(thread_mutex_id);
-osMutexDef(printf_mutex);
-osMutexId(printf_mutex_id);
 
 #define THREAD_MUTEX_LOCK() 	osMutexWait (thread_mutex_id, osWaitForever)
 #define THREAD_MUTEX_UNLOCK()	osMutexRelease(thread_mutex_id)
-#define PRINTF_MUTEX_LOCK() 	osMutexWait (printf_mutex_id, osWaitForever)
-#define PRINTF_MUTEX_UNLOCK()	osMutexRelease(printf_mutex_id)
 
 static int tcpServerInit(void)
 {
@@ -77,7 +72,6 @@ static int tcpServerInit(void)
 	TCP_SERVER_PRINTF("Server is ready\n");
 
 	thread_mutex_id = osMutexCreate (osMutex (thread_mutex));
-	printf_mutex_id = osMutexCreate (osMutex (printf_mutex));
 
 	return 0;
 }
@@ -92,7 +86,7 @@ void StartTcpServerTask(void const * argument)
 
 	if(tcpServerInit() < 0) {
 		TCP_SERVER_PRINTF("tcpSocketServerInit() error\n");
-		return;
+		osThreadTerminate(NULL);
 	}
 
 	for(;;)
@@ -103,16 +97,12 @@ void StartTcpServerTask(void const * argument)
 		  accept_fd = accept(socket_fd, (struct sockaddr *)&client_addr, (socklen_t *)&addr_len);
 
 		  if (accept_fd == -1) {
-			  PRINTF_MUTEX_LOCK();
-			  TCP_SERVER_PRINTF("accept() error\n");
-			  PRINTF_MUTEX_UNLOCK();
+			  TCP_SERVER_PRINTF("%s","accept() error\n");
 			  continue;
 		  }
 
-		  PRINTF_MUTEX_LOCK();
 		  TCP_SERVER_PRINTF("Client: %s\n", inet_ntoa(client_addr.sin_addr));
 		  TCP_SERVER_PRINTF("fd: %d\n", accept_fd);
-		  PRINTF_MUTEX_UNLOCK();
 
 		  THREAD_MUTEX_LOCK();
 
@@ -121,16 +111,12 @@ void StartTcpServerTask(void const * argument)
 
 			  ThreadId[i] = NULL;
 
-			  PRINTF_MUTEX_LOCK();
 			  TCP_SERVER_PRINTF("(1)Thread[%d] %p terminated\n",i, ThreadId[i]);
-			  PRINTF_MUTEX_UNLOCK();
 		  }
 		  //create a new thread
 		  ThreadId[i] = osThreadCreate (Servers[i], &accept_fd);
 
-		  PRINTF_MUTEX_LOCK();
 		  TCP_SERVER_PRINTF("(1)Thread[%d] %p (fd = %d) created\n",i, ThreadId[i], accept_fd);
-		  PRINTF_MUTEX_UNLOCK();
 
 		  if (++i > 4) {
 			  i = 0;
@@ -145,18 +131,14 @@ void ServerThread(void const * argument)
 {
 	int accept_fd = *((int *)argument);
 
-	PRINTF_MUTEX_LOCK();
 	TCP_SERVER_PRINTF("(2)Thread (fd = %d) started\n", accept_fd);
-	PRINTF_MUTEX_UNLOCK();
 
 #if defined(USE_HTTP_SERVER) || !defined(USE_TCP_SERVER)
-		PRINTF_MUTEX_LOCK();
 		http_status_t status = http_server_handler(accept_fd);
 		if (status != HTTP_OK)
 		{
 			TCP_SERVER_PRINTF("http_server_handler() error: %d\n", status);
 		}
-		PRINTF_MUTEX_UNLOCK();
 #else
 		int nbytes;
 		char buffer[80];
@@ -184,9 +166,7 @@ void ServerThread(void const * argument)
 		{
 		  if (ThreadId[i] == id) {
 
-			  PRINTF_MUTEX_LOCK();
 			  TCP_SERVER_PRINTF("(2)Thread[%d] %p (fd = %d) finished\n", i, ThreadId[i], accept_fd);
-			  PRINTF_MUTEX_UNLOCK();
 
 			  ThreadId[i] = NULL;
 

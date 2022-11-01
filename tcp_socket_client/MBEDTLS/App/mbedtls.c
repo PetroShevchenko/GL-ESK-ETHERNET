@@ -24,11 +24,14 @@
 #include "mbedtls.h"
 
 /* USER CODE BEGIN 0 */
-
+#include "cmsis_os.h"
+#include "mbedtls/platform.h"
+#include <string.h>
 /* USER CODE END 0 */
 
 /* USER CODE BEGIN 1 */
-
+/* Public key content */
+mbedtls_pk_context pkey;
 /* USER CODE END 1 */
 
 /* Global variables ---------------------------------------------------------*/
@@ -39,8 +42,23 @@ mbedtls_ctr_drbg_context ctr_drbg;
 mbedtls_entropy_context entropy;
 
 /* USER CODE BEGIN 2 */
-/* Public key content */
-mbedtls_pk_context pkey;
+void *pvWrap_mbedtls_calloc( size_t sNb, size_t sSize )
+{
+    void *vPtr = NULL;
+    if (sSize > 0) {
+        vPtr = pvPortMalloc(sSize * sNb); // Call FreeRTOS or other standard API
+        if(vPtr)
+           memset(vPtr, 0, (sSize * sNb)); // Must required
+    }
+    return vPtr;
+}
+
+void vWrap_mbedtls_free( void *vPtr )
+{
+    if (vPtr) {
+        vPortFree(vPtr); // Call FreeRTOS or other standard API
+    }
+}
 /* USER CODE END 2 */
 
 /* MBEDTLS init function */
@@ -54,7 +72,11 @@ void MX_MBEDTLS_Init(void)
   mbedtls_ctr_drbg_init(&ctr_drbg);
   mbedtls_entropy_init( &entropy );
   /* USER CODE BEGIN 3 */
-
+  int status = mbedtls_platform_set_calloc_free (pvWrap_mbedtls_calloc, vWrap_mbedtls_free);
+  if (status != 0)
+  {
+	  mbedtls_printf("mbedtls_platform_set_calloc_free returned error code %d", status);
+  }
   /* USER CODE END 3 */
 
 }

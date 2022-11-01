@@ -59,6 +59,7 @@ osThreadId defaultTaskHandle;
 osThreadId tcpClientTaskHandle;
 osThreadId tcpServerTaskHandle;
 osMessageQId dhcpIPaddrHandle;
+osMutexId printf_mutexHandle;
 /* USER CODE BEGIN PV */
 osThreadId sslServerTaskHandle;
 //DHT_sensor dht11 = {DHT11_IO_GPIO_Port, DHT11_IO_Pin, DHT11, 0};
@@ -79,10 +80,6 @@ extern void Start_SSL_ServerTask(void const * argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#if defined(NDEBUG) && defined(USE_SEMIHOST)
-#define printf(...)
-#endif
-
 #define TRANSMIT_TIMEOUT 5
 int __io_putchar(int ch)
 {
@@ -106,7 +103,7 @@ int __io_putchar(int ch)
 
 http_status_t http_temperature_path_handler(http_buffer_t *out)
 {
-	printf("http_temperature_path_handler()\n");
+	printf("%s","Entering");
 	if (out == NULL)
 	{
 		return HTTP_ERR_FAULT;
@@ -156,7 +153,7 @@ http_status_t http_temperature_path_handler(http_buffer_t *out)
 
 http_status_t http_humidity_path_handler(http_buffer_t *out)
 {
-	printf("http_humidity_path_handler()\n");
+	printf("%s","Entering");
 	if (out == NULL)
 	{
 		return HTTP_ERR_FAULT;
@@ -297,7 +294,6 @@ int main(void)
    * please, add 'pu addcarreturn Yes' to the file ~/.minirc.dfl
    * to attach '\r' after '\n'
    * */
-  printf("USART3 initialized\n");
   NVIC_SetPriorityGrouping(0);
 
   lcd_init();
@@ -311,6 +307,11 @@ int main(void)
   lcd_command_set(LCD_LFCR_CMD);
   lcd_puts("Starter Kit");
   /* USER CODE END 2 */
+
+  /* Create the mutex(es) */
+  /* definition and creation of printf_mutex */
+  osMutexDef(printf_mutex);
+  printf_mutexHandle = osMutexCreate(osMutex(printf_mutex));
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -339,16 +340,16 @@ int main(void)
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of tcpClientTask */
-  osThreadDef(tcpClientTask, StartTcpClientTask, osPriorityNormal, 0, 2048);
+  osThreadDef(tcpClientTask, StartTcpClientTask, osPriorityNormal, 0, 512);
   tcpClientTaskHandle = osThreadCreate(osThread(tcpClientTask), NULL);
 
   /* definition and creation of tcpServerTask */
-  osThreadDef(tcpServerTask, StartTcpServerTask, osPriorityNormal, 0, 2048);
+  osThreadDef(tcpServerTask, StartTcpServerTask, osPriorityNormal, 0, 512);
   tcpServerTaskHandle = osThreadCreate(osThread(tcpServerTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  osThreadDef(sslServerTask, Start_SSL_ServerTask, osPriorityHigh, 0, 4096);
+  osThreadDef(sslServerTask, Start_SSL_ServerTask, osPriorityHigh, 0, 2048);
   sslServerTaskHandle = osThreadCreate(osThread(sslServerTask), NULL);
   /* USER CODE END RTOS_THREADS */
 
@@ -630,7 +631,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	{
 		if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_SET)
 		{
-			printf("The blue button is pushed\n");
+			printf("%s","The blue button is pushed");
 			BSP_LED_Toggle(GREEN);
 			osSignalSet (tcpClientTaskHandle, SIGNAL_PUSH_BUTTON);
 		}

@@ -20,8 +20,7 @@ typedef enum
 } Status;
 
 #if (USE_TCP_CLIENT_PRINTF == 1)
-#include <stdio.h>
-#define TCP_CLIENT_PRINTF(...) do { printf("[tcp_client.c: %s: %d]: ",__func__, __LINE__);printf(__VA_ARGS__); } while (0)
+#define TCP_CLIENT_PRINTF printf
 #else
 #define TCP_CLIENT_PRINTF(...)
 #endif
@@ -43,12 +42,12 @@ void StartTcpClientTask(void const * argument)
          event = osSignalWait (SIGNAL_PUSH_BUTTON, osWaitForever);
 
          if (event.status == osEventSignal)  {
-        	TCP_CLIENT_PRINTF("osSignalWait() received event\n");
+        	TCP_CLIENT_PRINTF("%s","osSignalWait() received event\n");
  			BSP_LED_Off(GREEN);
 			if (resolve_address(SERVER, PORTNUM, &serv_addr) != STATUS_OK)
 			{
 		    	BSP_LED_On(ORANGE);
-		    	TCP_CLIENT_PRINTF("resolve_address() error\n");
+		    	TCP_CLIENT_PRINTF("%s","resolve_address() error\n");
 				continue;
 			}
 
@@ -56,7 +55,7 @@ void StartTcpClientTask(void const * argument)
 			if (sock_fd == STATUS_ERROR)
 			{
 		    	BSP_LED_On(ORANGE);
-		    	TCP_CLIENT_PRINTF("connect_server() error\n");
+		    	TCP_CLIENT_PRINTF("%s","connect_server() error\n");
 				continue;
 			}
 
@@ -64,7 +63,7 @@ void StartTcpClientTask(void const * argument)
 			if (send(sock_fd, message, strlen(message), 0) < 0)
 			{
 		    	BSP_LED_On(ORANGE);
-		    	TCP_CLIENT_PRINTF("send() error\n");
+		    	TCP_CLIENT_PRINTF("%s","send() error\n");
 				close(sock_fd);
 				continue;
 			}
@@ -72,7 +71,7 @@ void StartTcpClientTask(void const * argument)
 			int received;
 			if( (received = recv(sock_fd, buf, sizeof(buf), 0)) < 0) {
 		    	BSP_LED_On(ORANGE);
-		    	TCP_CLIENT_PRINTF("recv() error\n");
+		    	TCP_CLIENT_PRINTF("%s","recv() error\n");
 		        close(sock_fd);
 		        continue;
 		    }
@@ -84,7 +83,7 @@ void StartTcpClientTask(void const * argument)
 			close(sock_fd);
          }
          else {
-        	 TCP_CLIENT_PRINTF("osSignalWait() error\n");
+        	 TCP_CLIENT_PRINTF("%s","osSignalWait() error\n");
          }
     }
 }
@@ -92,12 +91,12 @@ void StartTcpClientTask(void const * argument)
 static Status resolve_address(const char *server, uint16_t port, struct sockaddr_in *address)
 {
 	if (server == NULL || address == NULL )	{
-		TCP_CLIENT_PRINTF("resolve_address() argument error\n");
+		TCP_CLIENT_PRINTF("%s","argument error\n");
         return STATUS_ERROR;
 	}
 	struct hostent *hp;
     if((hp = gethostbyname(server))== NULL) {
-    	TCP_CLIENT_PRINTF("gethostbyname() error\n");
+    	TCP_CLIENT_PRINTF("%s","gethostbyname() error\n");
         return STATUS_ERROR;
     }
 
@@ -112,19 +111,19 @@ static Status resolve_address(const char *server, uint16_t port, struct sockaddr
 static int connect_server(const struct sockaddr_in *address)
 {
 	if (address == NULL) {
-		TCP_CLIENT_PRINTF("connect_server() argument error\n");
+		TCP_CLIENT_PRINTF("%s", "argument error");
         return STATUS_ERROR;
 	}
 	int sock;
     if((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1){
-    	TCP_CLIENT_PRINTF("socket() error\n");
+    	TCP_CLIENT_PRINTF("%s","socket() error");
         return STATUS_ERROR;
     }
 
     TCP_CLIENT_PRINTF("Server address is %s\n", inet_ntoa(address->sin_addr));
 
     if(connect(sock, (struct sockaddr *)address, sizeof(*address)) == -1) {
-    	TCP_CLIENT_PRINTF("connect() error\n");
+    	TCP_CLIENT_PRINTF("%s","connect() error\n");
         close(sock);
         return STATUS_ERROR;
     }
