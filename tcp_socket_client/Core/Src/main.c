@@ -51,11 +51,14 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+RNG_HandleTypeDef hrng;
+
 UART_HandleTypeDef huart3;
 
 osThreadId defaultTaskHandle;
 osThreadId tcpClientTaskHandle;
 osThreadId tcpServerTaskHandle;
+osMessageQId dhcpIPaddrHandle;
 /* USER CODE BEGIN PV */
 osThreadId sslServerTaskHandle;
 //DHT_sensor dht11 = {DHT11_IO_GPIO_Port, DHT11_IO_Pin, DHT11, 0};
@@ -65,6 +68,7 @@ osThreadId sslServerTaskHandle;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_RNG_Init(void);
 void StartDefaultTask(void const * argument);
 extern void StartTcpClientTask(void const * argument);
 extern void StartTcpServerTask(void const * argument);
@@ -287,6 +291,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART3_UART_Init();
   MX_MBEDTLS_Init();
+  MX_RNG_Init();
   /* USER CODE BEGIN 2 */
   /* WARNING: if you use minicom as a terminal utility,
    * please, add 'pu addcarreturn Yes' to the file ~/.minirc.dfl
@@ -319,6 +324,11 @@ int main(void)
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* definition and creation of dhcpIPaddr */
+  osMessageQDef(dhcpIPaddr, 1, uint32_t);
+  dhcpIPaddrHandle = osMessageCreate(osMessageQ(dhcpIPaddr), NULL);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -338,7 +348,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  osThreadDef(sslServerTask, Start_SSL_ServerTask, osPriorityNormal, 0, 2048);
+  osThreadDef(sslServerTask, Start_SSL_ServerTask, osPriorityHigh, 0, 4096);
   sslServerTaskHandle = osThreadCreate(osThread(sslServerTask), NULL);
   /* USER CODE END RTOS_THREADS */
 
@@ -398,6 +408,32 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief RNG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RNG_Init(void)
+{
+
+  /* USER CODE BEGIN RNG_Init 0 */
+
+  /* USER CODE END RNG_Init 0 */
+
+  /* USER CODE BEGIN RNG_Init 1 */
+
+  /* USER CODE END RNG_Init 1 */
+  hrng.Instance = RNG;
+  if (HAL_RNG_Init(&hrng) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN RNG_Init 2 */
+
+  /* USER CODE END RNG_Init 2 */
+
 }
 
 /**
@@ -637,6 +673,7 @@ void StartDefaultTask(void const * argument)
 		  snprintf(msg, sizeof(msg), "%03lu.%03lu.%03lu.%03lu",
 				  (offered_ip)&0xFF,  (offered_ip >> 8)&0xFF, (offered_ip >> 16)&0xFF, (offered_ip >> 24)&0xFF);
 		  lcd_puts(msg);
+		  osMessagePut (dhcpIPaddrHandle, (uint32_t)msg, 0);
 	  }
 
 	  BSP_LED_Toggle(BLUE);

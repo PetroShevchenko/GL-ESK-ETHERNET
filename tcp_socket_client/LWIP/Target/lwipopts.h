@@ -125,6 +125,7 @@
 /* USER CODE BEGIN 1 */
 #define LWIP_DEBUG LWIP_DBG_ON
 #define DHCP_DEBUG LWIP_DBG_ON
+#define SO_REUSE 1
 /* USER CODE END 1 */
 
 #ifdef __cplusplus

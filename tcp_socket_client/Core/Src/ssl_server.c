@@ -13,6 +13,7 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
 #include "simple_http_server.h"
 
 extern mbedtls_ssl_context ssl;
@@ -22,9 +23,11 @@ extern mbedtls_ctr_drbg_context ctr_drbg;
 extern mbedtls_entropy_context entropy;
 extern mbedtls_pk_context pkey;
 
+extern osMessageQId dhcpIPaddrHandle;
+
 
 void SSL_ServerThread(void const * argument);
-const osThreadDef_t os_ssl_thread_def_server = { "SSL_Server", SSL_ServerThread, osPriorityNormal, 0, 1024 + 512};
+const osThreadDef_t os_ssl_thread_def_server = { "SSL_Server", SSL_ServerThread, osPriorityHigh, 0, 1024 + 512};
 osThreadId clientThreadId;
 
 osMutexDef(ssl_thread_mutex);
@@ -39,8 +42,11 @@ static const uint8_t *pers = (uint8_t*)("ssl_server");
 
 static void free_contexts(void);
 
-static bool SSL_ServerInit(void)
+static bool SSL_ServerInit(const char *IpAddr)
 {
+	if (IpAddr == NULL)
+		return false;
+
 	int status;
 	mbedtls_net_init(&listen_fd);
 	mbedtls_net_init(&client_fd);
@@ -94,7 +100,7 @@ static bool SSL_ServerInit(void)
 	*/
 	mbedtls_printf( "  . Bind on https://localhost:4433/ ..." );
 
-	if((status = mbedtls_net_bind(&listen_fd, NULL, "4433", MBEDTLS_NET_PROTO_TCP )) != 0)
+	if((status = mbedtls_net_bind(&listen_fd, IpAddr, "4433", MBEDTLS_NET_PROTO_TCP )) != 0)
 	{
 		mbedtls_printf( " failed\n  ! mbedtls_net_bind returned %d\n\n", status );
 		goto exit;
@@ -168,9 +174,18 @@ void Start_SSL_ServerTask(void const * argument)
 {
 	int status;
 	size_t attempts;
-	if (!SSL_ServerInit()) {
+	const char *IPaddrStr = NULL;
+
+	// wait till IP address is assigned by DHCP
+	osEvent event = osMessageGet(dhcpIPaddrHandle, osWaitForever);
+	if (event.status == osEventMessage)
+	{
+		IPaddrStr = event.value.p;
+	}
+
+	if (!SSL_ServerInit (IPaddrStr)) {
 		mbedtls_printf("SSL_ServerInit() error\n");
-		return;
+		osThreadTerminate(NULL);
 	}
 
 	for(;;)
