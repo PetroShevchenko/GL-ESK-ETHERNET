@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "mbedtls/platform.h"
+#include "mbedtls/error.h"
 
 #if (USE_HTTP_DEBUG_PRINTF == 1)
 #define HTTP_DEBUG_PRINF printf
@@ -516,6 +517,35 @@ static int send_answer(int sock, http_buffer_t *out)
 	return 0;
 }
 
+static http_status_t status_handler(http_status_t status, http_server_request_t *req, http_buffer_t *out)
+{
+	if (status != HTTP_OK)
+	{
+		HTTP_DEBUG_PRINF("parse_payload() error: %d\n", status);
+		bad_request_handler(out);
+		return status;
+	}
+	if (!is_command_implemented(req->command))
+	{
+		HTTP_DEBUG_PRINF("command not implemented\n");
+		not_implemented_handler(out);
+		return HTTP_ERR_NOT_IMPLEMENTED;
+	}
+	if (!is_path_correct((const char *)req->path))
+	{
+		HTTP_DEBUG_PRINF("requested path not found\n");
+		not_found_handler(out);
+		return HTTP_ERR_NOT_FOUND;
+	}
+	if (!is_version_correct((const char *)req->version))
+	{
+		HTTP_DEBUG_PRINF("wrong protocol version: %s\n",req->version);
+		bad_request_handler(out);
+		return HTTP_ERR_BAD_REQUEST;
+	}
+	return HTTP_OK;
+}
+
 http_status_t http_server_handler(int sock)
 {
 	int nbytes;
@@ -549,7 +579,7 @@ http_status_t http_server_handler(int sock)
 	{
 		status = parse_payload((const char *)in.data, &request);
 
-		if (status != HTTP_OK)
+/*		if (status != HTTP_OK)
 		{
 			HTTP_DEBUG_PRINF("parse_payload() error: %d\n", status);
 			bad_request_handler(&out);
@@ -573,6 +603,11 @@ http_status_t http_server_handler(int sock)
 			bad_request_handler(&out);
 			goto error_exit;
 		}
+*/
+		if (status_handler(status, &request, &out) != HTTP_OK)
+		{
+			goto error_exit;
+		}
 		// if everything is OK
 		status = request_handler(&request, &out);
 		if (status != HTTP_OK)
@@ -590,7 +625,12 @@ error_exit:
 	return status;
 }
 
+/******************************************************************************
+ * 						HTTPS server implementation
+ *****************************************************************************/
+
 static int ssl_send_answer(mbedtls_ssl_context *ssl, http_buffer_t *out);
+static const char *mbedtls_error_message(int status);
 
 http_status_t https_server_handler(mbedtls_net_context *ctx, mbedtls_ssl_context *ssl)
 {
@@ -618,56 +658,74 @@ http_status_t https_server_handler(mbedtls_net_context *ctx, mbedtls_ssl_context
 		free(in.data);
 		return HTTP_ERR_FAULT;
 	}
-	memset(in.data, 0, in.length);
 	memset(out.data, 0, out.length);
 
-	mbedtls_status = mbedtls_net_poll (ctx, MBEDTLS_NET_POLL_READ, 10 );
+	do {
 
-	if ( mbedtls_status == 0)
-	{
+		memset(in.data, 0, in.length);
+
+		mbedtls_status = mbedtls_net_poll (ctx, MBEDTLS_NET_POLL_READ, 60 );
+		if (mbedtls_status != MBEDTLS_NET_POLL_READ)
+		{
+			mbedtls_printf("mbedtls_net_poll returned error code %d", mbedtls_status);
+			mbedtls_printf("Error message: %s", mbedtls_error_message (mbedtls_status));
+			continue;
+		}
+
 		mbedtls_status = mbedtls_ssl_read(ssl, in.data, in.length);
+
+	    if (mbedtls_status == MBEDTLS_ERR_SSL_WANT_READ || mbedtls_status == MBEDTLS_ERR_SSL_WANT_WRITE )
+		{
+	    	continue;
+	    }
+
 		if (mbedtls_status <= 0)
 		{
-			status = HTTP_ERR_BAD_REQUEST;
-			goto error_exit;
+			mbedtls_printf("mbedtls_ssl_read returned error code %d", mbedtls_status);
+			mbedtls_printf("Error message: %s", mbedtls_error_message (mbedtls_status));
 		}
-		status = parse_payload((const char *)in.data, &request);
-		if (status != HTTP_OK)
+		else
 		{
-			HTTP_DEBUG_PRINF("parse_payload() error: %d\n", status);
-			bad_request_handler(&out);
-			goto error_exit;
+			break;
 		}
-		if (!is_command_implemented(request.command))
-		{
-			HTTP_DEBUG_PRINF("command not implemented\n");
-			not_implemented_handler(&out);
-			goto error_exit;
-		}
-		if (!is_path_correct((const char *)request.path))
-		{
-			HTTP_DEBUG_PRINF("requested path not found\n");
-			not_found_handler(&out);
-			goto error_exit;
-		}
-		if (!is_version_correct((const char *)request.version))
-		{
-			HTTP_DEBUG_PRINF("wrong protocol version: %s\n",request.version);
-			bad_request_handler(&out);
-			goto error_exit;
-		}
-		// if everything is OK
-		status = request_handler(&request, &out);
-		if (status != HTTP_OK)
-		{
-			error_handler(status, &out);
-		}
-	}
-	else
+
+	} while (true);
+
+	status = parse_payload((const char *)in.data, &request);
+/*	if (status != HTTP_OK)
 	{
-		mbedtls_printf(" mbedtls_net_poll() error : %d\n", mbedtls_status);
-		status = HTTP_ERR_RCV_TIMEOUT;
+		HTTP_DEBUG_PRINF("parse_payload() error: %d\n", status);
+		bad_request_handler(&out);
 		goto error_exit;
+	}
+	if (!is_command_implemented(request.command))
+	{
+		HTTP_DEBUG_PRINF("command not implemented\n");
+		not_implemented_handler(&out);
+		goto error_exit;
+	}
+	if (!is_path_correct((const char *)request.path))
+	{
+		HTTP_DEBUG_PRINF("requested path not found\n");
+		not_found_handler(&out);
+		goto error_exit;
+	}
+	if (!is_version_correct((const char *)request.version))
+	{
+		HTTP_DEBUG_PRINF("wrong protocol version: %s\n",request.version);
+		bad_request_handler(&out);
+		goto error_exit;
+	}
+*/
+	if (status_handler(status, &request, &out) != HTTP_OK)
+	{
+		goto error_exit;
+	}
+	// if everything is OK
+	status = request_handler(&request, &out);
+	if (status != HTTP_OK)
+	{
+		error_handler(status, &out);
 	}
 
 error_exit:
@@ -685,7 +743,11 @@ error_exit:
 static int ssl_send_answer(mbedtls_ssl_context *ssl, http_buffer_t *out)
 {
 	int status;
+	if (ssl == NULL || out == NULL)
+		return -1;
+
 	int len = strlen(out->data);
+
 	while( ( status = mbedtls_ssl_write(ssl, out->data, len ) ) <= 0 )
 	{
 	  if( status == MBEDTLS_ERR_NET_CONN_RESET )
@@ -718,3 +780,12 @@ static int ssl_send_answer(mbedtls_ssl_context *ssl, http_buffer_t *out)
 	mbedtls_printf( " Ok\n" );
 	return status;
 }
+
+static const char *mbedtls_error_message(int status)
+{
+	static char msg[128];
+	memset(msg, 0, sizeof(msg));
+	mbedtls_strerror(status, msg, sizeof(msg));
+	return msg;
+}
+

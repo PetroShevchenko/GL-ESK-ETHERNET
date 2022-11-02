@@ -25,11 +25,11 @@ static uint16_t nport;
 
 void ServerThread(void const * argument);
 
-const osThreadDef_t os_thread_def_server1 = { "Server1", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 2};
-const osThreadDef_t os_thread_def_server2 = { "Server2", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 2};
-const osThreadDef_t os_thread_def_server3 = { "Server3", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 2};
-const osThreadDef_t os_thread_def_server4 = { "Server4", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 2};
-const osThreadDef_t os_thread_def_server5 = { "Server5", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 2};
+const osThreadDef_t os_thread_def_server1 = { "Server1", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 4};
+const osThreadDef_t os_thread_def_server2 = { "Server2", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 4};
+const osThreadDef_t os_thread_def_server3 = { "Server3", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 4};
+const osThreadDef_t os_thread_def_server4 = { "Server4", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 4};
+const osThreadDef_t os_thread_def_server5 = { "Server5", ServerThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 4};
 
 const osThreadDef_t * Servers[5] = {&os_thread_def_server1, &os_thread_def_server2, &os_thread_def_server3, &os_thread_def_server4, &os_thread_def_server5};
 osThreadId ThreadId[5] = {NULL, NULL, NULL, NULL, NULL};

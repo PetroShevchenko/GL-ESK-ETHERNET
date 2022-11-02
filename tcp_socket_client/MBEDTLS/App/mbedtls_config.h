@@ -3109,7 +3109,7 @@
  * Uncomment to set the maximum plaintext size of both
  * incoming and outgoing I/O buffers.
  */
-#define MBEDTLS_SSL_MAX_CONTENT_LEN             2048
+//#define MBEDTLS_SSL_MAX_CONTENT_LEN             16384
 
 /** \def MBEDTLS_SSL_IN_CONTENT_LEN
  *
@@ -3193,7 +3193,7 @@
  *
  * The value below is only an example, not the default.
  */
-#define MBEDTLS_SSL_CIPHERSUITES MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+#define MBEDTLS_SSL_CIPHERSUITES MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
 
 /* X509 options */
 //#define MBEDTLS_X509_MAX_INTERMEDIATE_CA   8   /**< Maximum number of intermediate CAs in a verification chain. */
@@ -3294,6 +3294,7 @@
 #endif
 #include "mbedtls/check_config.h"
 
+#define MBEDTLS_ERROR_C
 /* USER CODE END 1 */
 
 #endif /* MBEDTLS_CONFIG_H */

@@ -27,7 +27,7 @@ extern osMessageQId dhcpIPaddrHandle;
 
 
 void SSL_ServerThread(void const * argument);
-const osThreadDef_t os_ssl_thread_def_server = { "SSL_Server", SSL_ServerThread, osPriorityHigh, 0, 1024 + 512};
+const osThreadDef_t os_ssl_thread_def_server = { "SSL_Server", SSL_ServerThread, osPriorityNormal, 0, 512};
 osThreadId clientThreadId;
 
 osMutexDef(ssl_thread_mutex);
@@ -170,6 +170,12 @@ static void free_contexts(void)
 	  mbedtls_entropy_free(&entropy);
 }
 
+struct SSLThreadContext
+{
+	mbedtls_net_context *netCtx;
+	mbedtls_ssl_context *sslCtx;
+};
+
 void Start_SSL_ServerTask(void const * argument)
 {
 	int status;
@@ -224,15 +230,7 @@ reset:
 
 		mbedtls_printf( " Ok\n" );
 
-		attempts = 0;
 		THREAD_MUTEX_LOCK();
-		while (clientThreadId != NULL && attempts < 10)
-		{
-			THREAD_MUTEX_UNLOCK();
-			mbedtls_net_usleep( 1000000UL ); // 1 second
-			THREAD_MUTEX_LOCK();
-			attempts++;
-		}
 
 		if (clientThreadId != NULL) {
 			osThreadTerminate(clientThreadId);
@@ -240,9 +238,23 @@ reset:
 			clientThreadId = NULL;
 		}
 
+		// prepare parameters for a new thread
+		struct SSLThreadContext threadCtx = { &client_fd, &ssl };
+
 		//create a new thread
-		clientThreadId = osThreadCreate (&os_ssl_thread_def_server, NULL);
+		clientThreadId = osThreadCreate (&os_ssl_thread_def_server, &threadCtx);
 		mbedtls_printf(" Thread [0x%p] started", clientThreadId);
+
+		// join thread
+		attempts = 0;
+		while (clientThreadId != NULL && attempts < 3000) // wait 50 minutes
+		{
+			THREAD_MUTEX_UNLOCK();
+			mbedtls_net_usleep( 1000000UL ); // 1 second
+			THREAD_MUTEX_LOCK();
+			attempts++;
+		}
+
 		THREAD_MUTEX_UNLOCK();
 	}
 
@@ -253,13 +265,15 @@ exit:
 
 void SSL_ServerThread(void const * argument)
 {
-	(void)argument;
+	struct SSLThreadContext *ctx = (struct SSLThreadContext *)argument;
 
-	http_status_t status = https_server_handler(&client_fd, &ssl);
+	http_status_t status = https_server_handler(ctx->netCtx, ctx->sslCtx);
 	if (status != HTTP_OK)
 	{
 		mbedtls_printf("https_server_handler() error: %d\n", status);
 	}
+
+	// terminate the thread
 	THREAD_MUTEX_LOCK();
 	if (clientThreadId == osThreadGetId ()) {
 		clientThreadId = NULL;

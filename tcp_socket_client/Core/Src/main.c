@@ -103,7 +103,6 @@ int __io_putchar(int ch)
 
 http_status_t http_temperature_path_handler(http_buffer_t *out)
 {
-	printf("%s","Entering");
 	if (out == NULL)
 	{
 		return HTTP_ERR_FAULT;
@@ -153,7 +152,6 @@ http_status_t http_temperature_path_handler(http_buffer_t *out)
 
 http_status_t http_humidity_path_handler(http_buffer_t *out)
 {
-	printf("%s","Entering");
 	if (out == NULL)
 	{
 		return HTTP_ERR_FAULT;

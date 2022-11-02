@@ -73,6 +73,7 @@ extern osMutexId printf_mutexHandle;
 	osMutexRelease(printf_mutexHandle);\
 	} while(0)
 #endif
+
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
