@@ -1,19 +1,15 @@
 #include "mbedtls.h"
-
 #include "mbedtls/certs.h"
 #include "mbedtls/x509.h"
 #include "mbedtls/pk.h"
-
 #include "mbedtls/net_sockets.h"
-#include "mbedtls/error.h"
-#include "mbedtls/platform.h"
 
-#include "main.h"
 #include "cmsis_os.h"
 
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
+#include "ssl_server.h"
 #include "simple_http_server.h"
 
 extern mbedtls_ssl_context ssl;
@@ -66,7 +62,7 @@ static bool SSL_ServerInit(const char *IpAddr)
 	/*
 	* 1. Load the certificates and private RSA key
 	*/
-	mbedtls_printf( "\n  . Loading the server cert. and key..." );
+	MBEDTLS_PRINTF( "\n  . Loading the server cert. and key..." );
 	/*
 	* This demonstration program uses embedded test certificates.
 	* Instead, you may want to use mbedtls_x509_crt_parse_file() to read the
@@ -75,60 +71,60 @@ static bool SSL_ServerInit(const char *IpAddr)
 	status = mbedtls_x509_crt_parse(&cert, (const unsigned char *) mbedtls_test_srv_crt, mbedtls_test_srv_crt_len );
 	if (status != 0)
 	{
-		mbedtls_printf( " failed\n  !  mbedtls_x509_crt_parse returned %d\n\n", status );
+		MBEDTLS_PRINTF( " failed\n  !  mbedtls_x509_crt_parse returned %d\n\n", status );
 		goto exit;
 	}
 
 	status = mbedtls_x509_crt_parse(&cert, (const unsigned char *) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len );
 	if (status != 0)
 	{
-		mbedtls_printf( " failed\n  !  mbedtls_x509_crt_parse returned %d\n\n", status );
+		MBEDTLS_PRINTF( " failed\n  !  mbedtls_x509_crt_parse returned %d\n\n", status );
 		goto exit;
 	}
 
 	status =  mbedtls_pk_parse_key(&pkey, (const unsigned char *) mbedtls_test_srv_key, mbedtls_test_srv_key_len, NULL, 0 );
 	if (status != 0)
 	{
-		mbedtls_printf( " failed\n  !  mbedtls_pk_parse_key returned %d\n\n", status );
+		MBEDTLS_PRINTF( " failed\n  !  mbedtls_pk_parse_key returned %d\n\n", status );
 		goto exit;
 	}
 
-	mbedtls_printf( " Ok\n" );
+	MBEDTLS_PRINTF( " Ok\n" );
 
 	/*
 	* 2. Setup the listening TCP socket
 	*/
-	mbedtls_printf( "  . Bind on https://localhost:4433/ ..." );
+	MBEDTLS_PRINTF( "  . Bind on https://localhost:4433/ ..." );
 
 	if((status = mbedtls_net_bind(&listen_fd, IpAddr, "4433", MBEDTLS_NET_PROTO_TCP )) != 0)
 	{
-		mbedtls_printf( " failed\n  ! mbedtls_net_bind returned %d\n\n", status );
+		MBEDTLS_PRINTF( " failed\n  ! mbedtls_net_bind returned %d\n\n", status );
 		goto exit;
 	}
 
-	mbedtls_printf( " Ok\n" );
+	MBEDTLS_PRINTF( " Ok\n" );
 
 	/*
 	* 3. Seed the RNG
 	*/
-	mbedtls_printf( "  . Seeding the random number generator..." );
+	MBEDTLS_PRINTF( "  . Seeding the random number generator..." );
 
 	if ((status = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *) pers, strlen( (char *)pers))) != 0)
 	{
-		mbedtls_printf( " failed\n  ! mbedtls_ctr_drbg_seed returned %d\n", status );
+		MBEDTLS_PRINTF( " failed\n  ! mbedtls_ctr_drbg_seed returned %d\n", status );
 		goto exit;
 	}
 
-	mbedtls_printf( " Ok\n" );
+	MBEDTLS_PRINTF( " Ok\n" );
 
 	/*
 	* 4. Setup stuff
 	*/
-	mbedtls_printf( "  . Setting up the SSL data...." );
+	MBEDTLS_PRINTF( "  . Setting up the SSL data...." );
 
 	if ( ( status = mbedtls_ssl_config_defaults(&conf, MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT)) != 0)
 	{
-		mbedtls_printf( " failed\n  ! mbedtls_ssl_config_defaults returned %d\n\n", status );
+		MBEDTLS_PRINTF( " failed\n  ! mbedtls_ssl_config_defaults returned %d\n\n", status );
 		goto exit;
 	}
 
@@ -137,17 +133,17 @@ static bool SSL_ServerInit(const char *IpAddr)
 	mbedtls_ssl_conf_ca_chain(&conf, cert.next, NULL);
 	if ( ( status = mbedtls_ssl_conf_own_cert(&conf, &cert, &pkey ) ) != 0)
 	{
-		mbedtls_printf( " failed\n  ! mbedtls_ssl_conf_own_cert returned %d\n\n", status );
+		MBEDTLS_PRINTF( " failed\n  ! mbedtls_ssl_conf_own_cert returned %d\n\n", status );
 		goto exit;
 	}
 
 	if ( ( status = mbedtls_ssl_setup(&ssl, &conf) ) != 0 )
 	{
-		mbedtls_printf( " failed\n  ! mbedtls_ssl_setup returned %d\n\n", status );
+		MBEDTLS_PRINTF( " failed\n  ! mbedtls_ssl_setup returned %d\n\n", status );
 		goto exit;
 	}
 
-	mbedtls_printf( " Ok\n" );
+	MBEDTLS_PRINTF( " Ok\n" );
 
 	ssl_thread_mutex_id = osMutexCreate (osMutex (ssl_thread_mutex));
 
@@ -190,7 +186,7 @@ void Start_SSL_ServerTask(void const * argument)
 	}
 
 	if (!SSL_ServerInit (IPaddrStr)) {
-		mbedtls_printf("SSL_ServerInit() error\n");
+		MBEDTLS_PRINTF("SSL_ServerInit() error\n");
 		osThreadTerminate(NULL);
 	}
 
@@ -203,38 +199,38 @@ reset:
 		/*
 		* 5. Wait until a client connects
 		*/
-		mbedtls_printf( "  . Waiting for a remote connection ...\n" );
+		MBEDTLS_PRINTF( "  . Waiting for a remote connection ...\n" );
 
 		if ((status = mbedtls_net_accept(&listen_fd, &client_fd, NULL, 0, NULL)) != 0)
 		{
-			mbedtls_printf( "  => connection failed\n  ! mbedtls_net_accept returned %d\n\n", status );
+			MBEDTLS_PRINTF( "  => connection failed\n  ! mbedtls_net_accept returned %d\n\n", status );
 			goto exit;
 		}
 
 		mbedtls_ssl_set_bio(&ssl, &client_fd, mbedtls_net_send, mbedtls_net_recv, NULL );
-		mbedtls_printf( "  => connection Ok\n" );
+		MBEDTLS_PRINTF( "  => connection Ok\n" );
 
 		/*
 		* 6. Handshake
 		*/
-		mbedtls_printf( "  . Performing the SSL/TLS handshake..." );
+		MBEDTLS_PRINTF( "  . Performing the SSL/TLS handshake..." );
 
 		while ( ( status = mbedtls_ssl_handshake(&ssl) ) != 0 )
 		{
 			if ( status != MBEDTLS_ERR_SSL_WANT_READ && status != MBEDTLS_ERR_SSL_WANT_WRITE )
 			{
-				mbedtls_printf( " failed\n  ! mbedtls_ssl_handshake returned %d\n\n", status );
+				MBEDTLS_PRINTF( " failed\n  ! mbedtls_ssl_handshake returned %d\n\n", status );
 				goto reset;
 			}
 		}
 
-		mbedtls_printf( " Ok\n" );
+		MBEDTLS_PRINTF( " Ok\n" );
 
 		THREAD_MUTEX_LOCK();
 
 		if (clientThreadId != NULL) {
 			osThreadTerminate(clientThreadId);
-			mbedtls_printf(" Thread [0x%p] terminated", clientThreadId);
+			MBEDTLS_PRINTF(" Thread [0x%p] terminated", clientThreadId);
 			clientThreadId = NULL;
 		}
 
@@ -243,7 +239,7 @@ reset:
 
 		//create a new thread
 		clientThreadId = osThreadCreate (&os_ssl_thread_def_server, &threadCtx);
-		mbedtls_printf(" Thread [0x%p] started", clientThreadId);
+		MBEDTLS_PRINTF(" Thread [0x%p] started", clientThreadId);
 
 		// join thread
 		attempts = 0;
@@ -259,7 +255,7 @@ reset:
 	}
 
 exit:
-	mbedtls_printf("%s"," Start_SSL_ServerTask unexpectedly finished its work\n");
+	MBEDTLS_PRINTF("%s"," Start_SSL_ServerTask unexpectedly finished its work\n");
 	free_contexts();
 }
 
@@ -270,7 +266,7 @@ void SSL_ServerThread(void const * argument)
 	http_status_t status = https_server_handler(ctx->netCtx, ctx->sslCtx);
 	if (status != HTTP_OK)
 	{
-		mbedtls_printf("https_server_handler() error: %d\n", status);
+		MBEDTLS_PRINTF("https_server_handler() error: %d\n", status);
 	}
 
 	// terminate the thread
@@ -280,4 +276,12 @@ void SSL_ServerThread(void const * argument)
 	}
 	THREAD_MUTEX_UNLOCK();
 	osThreadTerminate(NULL);
+}
+
+const char *mbedtls_error_message(int status)
+{
+	static char msg[128];
+	memset(msg, 0, sizeof(msg));
+	mbedtls_strerror(status, msg, sizeof(msg));
+	return msg;
 }
