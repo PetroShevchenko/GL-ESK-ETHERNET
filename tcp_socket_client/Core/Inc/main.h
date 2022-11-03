@@ -61,16 +61,24 @@ extern osMutexId printf_mutexHandle;
 #define RED 	LED5
 #define BLUE 	LED6
 
-#if defined(NDEBUG) && defined(USE_SEMIHOST)
+#ifdef USE_SEMIHOST
+#define PRINTF_LOCK()
+#define PRINTF_UNLOCK()
+#else
+#define PRINTF_LOCK() osMutexWait (printf_mutexHandle, osWaitForever)
+#define PRINTF_UNLOCK() osMutexRelease(printf_mutexHandle)
+#endif
+
+#ifdef NDEBUG
 #define printf(...)
 #else
 #define printf(...)\
 	do {\
-	osMutexWait (printf_mutexHandle, osWaitForever);\
+	PRINTF_LOCK();\
 	printf("[%s:%d] ", __func__ , __LINE__);\
 	printf(__VA_ARGS__);\
 	printf("\r\n");\
-	osMutexRelease(printf_mutexHandle);\
+	PRINTF_UNLOCK();\
 	} while(0)
 #endif
 

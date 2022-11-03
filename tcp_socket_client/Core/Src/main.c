@@ -276,6 +276,9 @@ int main(void)
    *
    * 3. Add macros USE_SEMIHOST to the menu item
    * 	'Properties->C/C++Build->Settings->MCU GCC Compiler->Preprocessor'
+   *
+   * 4. Setup a new debug configuration openocd + arm-none-eabi-gdb
+   * 	using menu items External Tool Configuration and GDB Hardware Debugging
    * */
   initialise_monitor_handles();
   printf("Semihosting activated\n");
