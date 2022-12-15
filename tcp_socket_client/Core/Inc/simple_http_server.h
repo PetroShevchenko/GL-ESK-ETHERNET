@@ -20,6 +20,7 @@ typedef enum
 	HTTP_ERR_NOT_IMPLEMENTED,
 	HTTP_ERR_BAD_REQUEST,
 	HTTP_ERR_NOT_FOUND,
+	HTTP_ERR_TLS_READ,
 } http_status_t;
 
 typedef struct

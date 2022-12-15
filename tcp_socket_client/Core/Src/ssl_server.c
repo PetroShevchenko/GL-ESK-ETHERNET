@@ -94,9 +94,9 @@ static bool SSL_ServerInit(const char *IpAddr)
 	/*
 	* 2. Setup the listening TCP socket
 	*/
-	MBEDTLS_PRINTF( "  . Bind on https://localhost:4433/ ..." );
+	MBEDTLS_PRINTF( "  . Bind on https://%s:443/ ...", IpAddr);
 
-	if((status = mbedtls_net_bind(&listen_fd, IpAddr, "4433", MBEDTLS_NET_PROTO_TCP )) != 0)
+	if((status = mbedtls_net_bind(&listen_fd, IpAddr, "443", MBEDTLS_NET_PROTO_TCP )) != 0)
 	{
 		MBEDTLS_PRINTF( " failed\n  ! mbedtls_net_bind returned %d\n\n", status );
 		goto exit;
@@ -220,6 +220,7 @@ reset:
 			if ( status != MBEDTLS_ERR_SSL_WANT_READ && status != MBEDTLS_ERR_SSL_WANT_WRITE )
 			{
 				MBEDTLS_PRINTF( " failed\n  ! mbedtls_ssl_handshake returned %d\n\n", status );
+				MBEDTLS_PRINTF("Error message: %s", mbedtls_error_message (status));
 				goto reset;
 			}
 		}
@@ -227,12 +228,6 @@ reset:
 		MBEDTLS_PRINTF( " Ok\n" );
 
 		THREAD_MUTEX_LOCK();
-
-		if (clientThreadId != NULL) {
-			osThreadTerminate(clientThreadId);
-			MBEDTLS_PRINTF(" Thread [0x%p] terminated", clientThreadId);
-			clientThreadId = NULL;
-		}
 
 		// prepare parameters for a new thread
 		struct SSLThreadContext threadCtx = { &client_fd, &ssl };
@@ -243,12 +238,19 @@ reset:
 
 		// join thread
 		attempts = 0;
-		while (clientThreadId != NULL && attempts < 3000) // wait 50 minutes
+		while (clientThreadId != NULL && attempts < 300) // wait 5 minutes
 		{
 			THREAD_MUTEX_UNLOCK();
 			mbedtls_net_usleep( 1000000UL ); // 1 second
 			THREAD_MUTEX_LOCK();
 			attempts++;
+		}
+
+		if (clientThreadId != NULL)
+		{
+			osThreadTerminate(clientThreadId);
+			MBEDTLS_PRINTF(" Thread [0x%p] terminated", clientThreadId);
+			clientThreadId = NULL;
 		}
 
 		THREAD_MUTEX_UNLOCK();
@@ -263,10 +265,26 @@ void SSL_ServerThread(void const * argument)
 {
 	struct SSLThreadContext *ctx = (struct SSLThreadContext *)argument;
 
-	http_status_t status = https_server_handler(ctx->netCtx, ctx->sslCtx);
-	if (status != HTTP_OK)
+	while(1)
 	{
-		MBEDTLS_PRINTF("https_server_handler() error: %d\n", status);
+		http_status_t status = https_server_handler(ctx->netCtx, ctx->sslCtx);
+		if (status != HTTP_OK)
+		{
+			MBEDTLS_PRINTF("https_server_handler() error: %d\n", status);
+			break;
+		}
+	}
+
+	MBEDTLS_PRINTF( "  . Closing the connection..." );
+	int st;
+	while( (st = mbedtls_ssl_close_notify(ctx->sslCtx) ) < 0 )
+	{
+		if( st != MBEDTLS_ERR_SSL_WANT_READ && st != MBEDTLS_ERR_SSL_WANT_WRITE )
+		{
+			MBEDTLS_PRINTF( " failed\n  ! mbedtls_ssl_close_notify returned %d\n\n", st );
+			MBEDTLS_PRINTF("Error message: %s", mbedtls_error_message (st));
+			break;
+		}
 	}
 
 	// terminate the thread

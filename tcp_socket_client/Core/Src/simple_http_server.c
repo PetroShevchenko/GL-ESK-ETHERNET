@@ -636,11 +636,14 @@ http_status_t https_server_handler(mbedtls_net_context *ctx, mbedtls_ssl_context
 
 		memset(in.data, 0, in.length);
 
-		mbedtls_status = mbedtls_net_poll (ctx, MBEDTLS_NET_POLL_READ, 60 );
+		mbedtls_status = mbedtls_net_poll (ctx, MBEDTLS_NET_POLL_READ, 10000 ); // wait 10 seconds
 		if (mbedtls_status != MBEDTLS_NET_POLL_READ)
 		{
-			MBEDTLS_PRINTF("mbedtls_net_poll returned error code %d", mbedtls_status);
-			MBEDTLS_PRINTF("Error message: %s", mbedtls_error_message (mbedtls_status));
+			if (mbedtls_status != 0)
+			{
+				MBEDTLS_PRINTF("mbedtls_net_poll returned error code %d", mbedtls_status);
+				MBEDTLS_PRINTF("Error message: %s", mbedtls_error_message (mbedtls_status));
+			}
 			continue;
 		}
 
@@ -650,16 +653,16 @@ http_status_t https_server_handler(mbedtls_net_context *ctx, mbedtls_ssl_context
 		{
 	    	continue;
 	    }
-
-		if (mbedtls_status <= 0)
+		if (mbedtls_status < 0)
 		{
 			MBEDTLS_PRINTF("mbedtls_ssl_read returned error code %d", mbedtls_status);
 			MBEDTLS_PRINTF("Error message: %s", mbedtls_error_message (mbedtls_status));
+			free(in.data);
+			free(out.data);
+			return HTTP_ERR_TLS_READ;
 		}
-		else
-		{
+		if (mbedtls_status > 0)
 			break;
-		}
 
 	} while (true);
 
@@ -697,33 +700,21 @@ static int ssl_send_answer(mbedtls_ssl_context *ssl, http_buffer_t *out)
 
 	while( ( status = mbedtls_ssl_write(ssl, out->data, len ) ) <= 0 )
 	{
-	  if( status == MBEDTLS_ERR_NET_CONN_RESET )
-	  {
-		MBEDTLS_PRINTF( " failed\n  ! peer closed the connection\n\n" );
-		return status;
-	  }
+		if( status == MBEDTLS_ERR_NET_CONN_RESET )
+		{
+			MBEDTLS_PRINTF( " failed\n  ! peer closed the connection\n\n" );
+			return status;
+		}
 
-	  if( status != MBEDTLS_ERR_SSL_WANT_READ && status != MBEDTLS_ERR_SSL_WANT_WRITE )
-	  {
-		MBEDTLS_PRINTF( " failed\n  ! mbedtls_ssl_write returned %d\n\n", status );
-		return status;;
-	  }
+		if( status != MBEDTLS_ERR_SSL_WANT_READ && status != MBEDTLS_ERR_SSL_WANT_WRITE )
+		{
+			MBEDTLS_PRINTF( " failed\n  ! mbedtls_ssl_write returned %d\n\n", status );
+			return status;
+		}
 	}
 
 	len = status;
 	MBEDTLS_PRINTF( " %d bytes written\n%s", len, (char *) out->data );
-
-	MBEDTLS_PRINTF( "  . Closing the connection..." );
-
-	while( (status = mbedtls_ssl_close_notify(ssl) ) < 0 )
-	{
-	  if( status != MBEDTLS_ERR_SSL_WANT_READ && status != MBEDTLS_ERR_SSL_WANT_WRITE )
-	  {
-		MBEDTLS_PRINTF( " failed\n  ! mbedtls_ssl_close_notify returned %d\n\n", status );
-		return status;;
-	  }
-	}
-
 	MBEDTLS_PRINTF( " Ok\n" );
 	return status;
 }
